@@ -50,6 +50,22 @@ git pull
 python -m src.leaderboard
 ```
 
+## To-do
+Tick these off (`- [x]`) as they're done.
+
+- [ ] **Find footage/data from other matches** with tracking + event or possession data, for validation (start with Metrica's open sample games: same tracking format as ours).
+- [ ] **Build the validation set**: turn their events into per-frame H/A/D, make it noisy like ours (drop the ball on ~41% of frames, break tracks), plug it into `src.run` so the leaderboard ranks.
+- [ ] **Ball recovery**: fill the frames where the ball is missing (interpolation from tracking first, then ball detection in the video).
+- [ ] **Dead-ball detection**: ball out of bounds, play stopped, restarts (Smart Tagging set pieces, video cues).
+- [ ] **Idea loop**: work through the backlog in `EXPERIMENTS.md` with `/idea`, keep what wins on validation.
+- [ ] **Research**: possession-detection methods from tracking data, add good ones to the backlog.
+- [ ] **Combine** the best pieces into one final algorithm.
+- [ ] **Technical doc**: build it as we go from `BUILD_NOTES.md` (approach, data used and dropped, possession rules, limitations, reproduction).
+- [ ] **Reproducibility check**: fresh clone + one command regenerates the exact submission CSV, dependencies pinned.
+- [ ] **Submit**: CSV + repo link + technical doc through the Google Form.
+
+**Deadlines:** all 3 register with the same team name by **Nov 10** · form instructions by **Nov 14** · internal freeze **Nov 16** · submission **Nov 17 23:59 CET (Tue Nov 18 09:59 Sydney)**.
+
 ## Rules that bite (organisers updated them Oct 22–23)
 - **No hand labels on this match, for any purpose**, including validation. No human-made data about it from anywhere.
 - **The public 5 minutes only check the pipeline.** Never tune on them or pick versions with them.
