@@ -1,54 +1,51 @@
 # Team workflow
 
-The loop: **idea → algorithm file → run → leaderboard → keep or drop → next idea.**
+The loop: **idea → algorithm file → run → compare → keep or drop → next idea.**
+Setup and the short version are in README.md. This is the detail.
 
-## One-time setup (each teammate)
+## 1. Idea
+Pick from the backlog in `EXPERIMENTS.md`, or start from a failure you saw while watching the video next to your labels. Check the log first so we don't redo dropped ideas.
+
+## 2. Code it
+`/idea <description>` in Claude Code does steps 2–6 for you. By hand:
+- Copy `src/algos/_template.py` to `src/algos/<idea>.py`. Never edit someone else's algo file; copy it or import its helpers.
+- Write `predict(match, **params)`: return one of `H`/`A`/`D`/`X` per frame. `match` has everything as numpy arrays (see `class Match` in `src/common.py`).
+- Every tunable number goes in `PARAMS`, with a physical meaning (metres, seconds), not a value fitted to this match.
+- Write the docstring for a reader. It becomes the technical document.
+
+## 3. Run it
 ```powershell
-git clone https://github.com/tristantrieu2607/Nemanta---More-Than-A-Hack-2027.git
-cd Nemanta---More-Than-A-Hack-2027
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt -r requirements-starter.txt
+python -m src.run <idea> --note "what this tests"
+python -m src.run <idea> -p radius_m=1.0,1.5,2.0        # one run per value
+python -m src.run <idea> --bootstrap 1000                # intervals (meaningful on validation)
+python -m src.run <idea> --no-log                        # quick look, nothing recorded
 ```
-Download these 4 files from the shared Drive (`...Dataset/tactical/`) into `data\tactical\`:
-`BAR-ATH_tactical_atd.txt`, `BAR-ATH_tactical_atd.xml`, `BAR-ATH_tactical_homography.csv`, `BAR-ATH_tactical_smart_tagging.xml`.
-`data\` is gitignored — data never goes to GitHub.
+Writes `data/submissions/<idea>__<params>.csv`, re-checks it with the organisers' validator, scores it, logs one JSON to `experiments/runs/`.
 
-Check it works (first run parses the tracking once, ~1 min, then it's cached):
+## 4. Compare
+`python -m src.leaderboard`. Two kinds of number:
+- **check_*** (public 5 min): did it run, is the possession count sane (truth: 17 possessions, mean 14.2 s). Way above 17 = fragmenting, below = merging. **Not for choosing between versions. That's a rule.**
+- **val_*** (other games, once built): the actual ranking. Gaps inside the bootstrap interval are noise.
+
+## 5. Decide
+One line in `EXPERIMENTS.md`: kept or dropped, and what you learned. Changelog line in `BUILD_NOTES.md` if the pipeline changed.
+
+## 6. Share
 ```powershell
-python -m src.run baseline --no-log
+python -m src.share <idea> -m "<idea>: what it does"
 ```
-Expected: public spellF1 0.3256.
-
-## The loop
-1. **Idea** — pick from the backlog in `EXPERIMENTS.md`, or start from a failure you saw.
-2. **Code it** — copy `src/algos/_template.py` to `src/algos/<idea>.py`. Put every tunable number in `PARAMS`. Write the docstring for a reader: it becomes the technical doc. Never edit someone else's algo file — copy it to a new name.
-3. **Run it**
-   ```powershell
-   python -m src.run <idea> --note "what this tests"
-   python -m src.run <idea> -p radius_m=1.0,1.5,2.0          # small sweep
-   python -m src.run <idea> --bootstrap 1000                  # before claiming it beats something
-   ```
-   Writes `data/submissions/<idea>__<params>.csv` (validated with the organisers' own check), scores it, logs one JSON to `experiments/runs/`.
-4. **Rank** — `python -m src.leaderboard`
-5. **Decide** — add one line to `EXPERIMENTS.md`: kept or dropped, and what you learned. Update `BUILD_NOTES.md` if the pipeline changed.
-6. **Share** — commit and push (below).
-
-## Ranking rules
-- Ranked on **validation spellF1** (our hand labels) once they exist; until then on the public 5 minutes, which is only a sanity check.
-- A gap smaller than the bootstrap interval is not a win.
-- Prefer parameters with a physical meaning over the best-scoring decimal.
-
-## Git
+Commits only the algo file, run logs, EXPERIMENTS.md and BUILD_NOTES.md, pulls teammates' work, pushes. Anything else (shared code in `src/common.py`, docs) → normal git:
 ```powershell
-git pull --rebase            # always first
-git add src experiments EXPERIMENTS.md BUILD_NOTES.md validation
-git commit -m "control radius: switch only within 1.5 m"
+git pull --rebase
+git add <files>
+git commit -m "..."
 git push
 ```
-- Work on `main` directly; algos and run logs are separate files, so conflicts are rare.
-- Rerun a result you want to keep **after** committing, so its log has a clean commit hash (a `*` on the leaderboard means it came from uncommitted code).
+- Work on `main`. Algos and run logs are separate files, so conflicts are rare.
+- `*` next to a commit on the leaderboard = run from uncommitted code. Rerun after sharing if you want a clean record.
 - Never commit `data/`, notebook outputs, or anything frame-level from the tracking.
 
-## Hand labels (validation)
-See `validation/README.md`.
+## Rules to keep in mind
+- No hand labels or human-made data about this match, for any purpose.
+- No constants tied to specific frames you saw in the video.
+- Data from other games is fine; record what and from where in the technical doc.

@@ -1,3 +1,50 @@
+# Team Nemanta — start here
+
+Our working copy of the challenge. Our section is this one; everything under the line is the organisers' original README.
+
+## Setup (once)
+```powershell
+git clone https://github.com/tristantrieu2607/Nemanta---More-Than-A-Hack-2027.git
+cd Nemanta---More-Than-A-Hack-2027
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt -r requirements-starter.txt
+```
+From the shared Drive (`Dataset/tactical/`), download into `data\tactical\`: `BAR-ATH_tactical_atd.txt`, `BAR-ATH_tactical_atd.xml`, `BAR-ATH_tactical_homography.csv`, `BAR-ATH_tactical_smart_tagging.xml`. Then check it works:
+```powershell
+python -m src.run baseline --no-log      # first run ~1 min, expect public check spellF1 0.3256
+```
+
+## Add an idea
+**With Claude Code** (VS Code), in this folder type:
+```
+/idea only switch possession when a player is within 1.5 m of the ball
+```
+Claude writes it as `src/algos/<name>.py`, runs it, logs it, shows how it compares, and uploads it when you say yes.
+
+**By hand**
+```powershell
+Copy-Item src\algos\_template.py src\algos\my_idea.py   # write your rule in predict()
+python -m src.run my_idea --note "what it tests"
+python -m src.leaderboard
+python -m src.share my_idea -m "my_idea: what it does"
+```
+
+## See where everyone is
+```powershell
+git pull
+python -m src.leaderboard
+```
+
+## Rules that bite (organisers updated them Oct 22–23)
+- **No hand labels on this match, for any purpose**, including validation. No human-made data about it from anywhere.
+- **The public 5 minutes only check the pipeline.** Never tune on them or pick versions with them.
+- Validation has to come from **other games**. Until we have it, the leaderboard lists runs but does not rank them. See `validation/README.md`.
+
+More: `WORKFLOW.md` (the full loop, git rules) · `EXPERIMENTS.md` (log + backlog) · `BUILD_NOTES.md` (architecture) · `CLAUDE.md` (context for Claude).
+
+---
+
 # More than a Hack 2027 — Phase 1: Ball Possession
 
 **Organised by [Metrica Sports](https://metrica-sports.com), [FC Barcelona](https://www.fcbarcelona.com)

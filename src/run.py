@@ -6,8 +6,11 @@
     python -m src.run my_idea --bootstrap 1000              # intervals, before believing any gap
     python -m src.run my_idea --no-log                      # quick look, nothing recorded
 
-Each logged run is one small JSON in experiments/runs/ -- commit it. Rank everything with
-    python -m src.leaderboard
+Each logged run is one small JSON in experiments/runs/ -- commit it, or use python -m src.share.
+See every run with python -m src.leaderboard.
+
+The public 5 minutes are a PIPELINE CHECK only: RULES.md forbids tuning on them or using them to
+choose between versions. Ranking needs a validation set built from other games.
 """
 import argparse
 import ast
@@ -59,7 +62,7 @@ def tag(params):
 
 def line(name, scores):
     if scores is None:
-        return "  {:<13} -- no hand labels yet (validation/labels/)".format(name)
+        return "  {:<13} -- not built yet (needs other games, see validation/README.md)".format(name)
     ci = ""
     if scores["spell_bootstrap_low"] is not None:
         ci = " [{:.3f}-{:.3f}]".format(scores["spell_bootstrap_low"], scores["spell_bootstrap_high"])
@@ -114,7 +117,7 @@ def main():
         }
         print("{}  {}  ({:.1f}s){}".format(args.algo, params, runtime,
                                          "  [uncommitted src/]" if dirty else ""))
-        print(line("public 5 min", record["public"]))
+        print(line("public check", record["public"]))
         print(line("validation", record["val"]))
         print("  -> " + os.path.relpath(path, common.ROOT))
         if not args.no_log:
