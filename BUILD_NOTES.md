@@ -17,3 +17,4 @@ Living description of the pipeline. Updated on every code change; becomes the te
 - 2026-11-01: repo set up; CLAUDE.md, EXPERIMENTS.md, WORKFLOW.md added. Tracking metadata holds only x/y/speed per track + ball — no ball-owner or ball-alive fields.
 - 2026-11-01: experiment framework (common, run, leaderboard, check_labels, algos/baseline, algos/_template). Baseline reproduces all four organiser public scores exactly (0.0378 / 0.2868 / 0.3256 / 0.4242), confirming frame alignment, team mapping and metre scaling.
 - 2026-11-01: organisers' Oct 22–23 rule update: no hand labels on BAR-ATH for any purpose (incl. validation), public 5 min not for tuning or choosing versions. Removed hand-label validation and calibration tooling; leaderboard no longer ranks on the public check. Added `src/share.py`, `/idea` Claude Code command, team section at the top of README.md.
+- 2026-11-01: to-do list added to the README team section.

@@ -2,6 +2,20 @@
 
 Our working copy of the challenge. Our section is this one; everything under the line is the organisers' original README.
 
+## To-do
+Deadline Nov 17, 23:59 CET (Tue Nov 18, 09:59 Sydney). Tick items off as they land.
+
+- [ ] All 3 register with the same team name (before Nov 10)
+- [ ] Find other matches with tracking + event data to validate on (this match can't be used)
+- [ ] Turn them into per-frame H/A/D labels and make them noisy like ours (ball missing ~41%, broken tracks)
+- [ ] Plug that validation set into `src.run` so the leaderboard ranks
+- [ ] Ball recovery: fill the frames where the tracking loses the ball (interpolation, then detection in the video)
+- [ ] Dead-ball detection: ball off the pitch, play stopped, restarts from Smart Tagging
+- [ ] Idea loop: control radius, hysteresis, gap handling, sequence model (backlog in `EXPERIMENTS.md`)
+- [ ] Pick the final version on validation, freeze by Nov 16
+- [ ] Technical doc: approach, data used and dropped, possession rules, limitations, how to reproduce
+- [ ] Reproduce the submission from a clean clone, validate it, submit (form arrives by Nov 14)
+
 ## Setup (once)
 ```powershell
 git clone https://github.com/tristantrieu2607/Nemanta---More-Than-A-Hack-2027.git
