@@ -1,0 +1,28 @@
+{
+ "time": "2026-11-01T12:48:54",
+ "author": "tristantrieu2607",
+ "commit": "8e74baa",
+ "dirty": false,
+ "algo": "baseline",
+ "params": {
+  "window": 50
+ },
+ "note": "organiser baseline",
+ "runtime_s": 0.6,
+ "public": {
+  "spell_f1_mean": 0.3256,
+  "macro_f1": 0.6207,
+  "spell_bootstrap_low": null,
+  "spell_bootstrap_high": null,
+  "n_pred_spells": 26,
+  "n_gt_spells": 17,
+  "mean_spell_duration_s": 10.8031,
+  "gt_mean_spell_duration_s": 14.1906,
+  "alive_dead_f1": 0.899,
+  "team_acc_gt_alive": 0.8349,
+  "n_graded": 7500
+ },
+ "val": null,
+ "val_hash": null,
+ "val_files": []
+}
