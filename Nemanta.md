@@ -1,6 +1,6 @@
 # More than a Hack 2027 — Phase 1: technical document
 
-Team: **<Nemanta>** · Repository: https://github.com/tristantrieu2607/Nemanta---More-Than-A-Hack-2027
+Team: **Nemanta** · Repository: https://github.com/tristantrieu2607/Nemanta---More-Than-A-Hack-2027
 Submitted algorithm: `src/algos/gbdt_tristan.py` · one command regenerates the file (section 7).
 
 ## 1. Approach in one paragraph
@@ -32,7 +32,7 @@ External balanced spellF1 (mean of the three source means; organisers' scorer):
 | + context before vs after each frame | 0.733 |
 | + team shape before vs after (spread, depth, defensive line, players goal-side) | 0.753 |
 | + DFL added; training weights on short possessions and change points (`gbdt_weighted`) | 0.766 (30 matches, 2 seeds) |
-| + observation features (section 3.3): **submitted** (`gbdt_tristan`) | <FULL RESULT> |
+| + observation features (section 3.3): **submitted** (`gbdt_tristan`) | 0.761 vs 0.752 for `gbdt_weighted` on the 17-match screen (better in all three leagues, both readings) |
 
 Tried and dropped (no gain beyond seed noise, ~0.005): set-piece layout flags, snapping each change
 to the new team's first touch, a minimum possession length, a minimum stoppage length, the

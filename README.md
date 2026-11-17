@@ -1,7 +1,7 @@
 # More than a Hack 2027 — Phase 1: Ball Possession
 
 > **Our Phase 1 submission.** Algorithm `src/algos/gbdt_tristan.py`; technical document
-> [TECHNICAL_DOCUMENT.md](TECHNICAL_DOCUMENT.md). To regenerate the submitted file (match data in
+> [Nemanta.md](Nemanta.md). To regenerate the submitted file (match data in
 > `data/tactical/`, external data as in [validation/README.md](validation/README.md)):
 > ```
 > pip install -r requirements-team.txt

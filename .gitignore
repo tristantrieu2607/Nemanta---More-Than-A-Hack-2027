@@ -62,3 +62,6 @@ __pycache__/
 venv/
 env/
 .DS_Store
+
+# local copy of the files for the submission form (the CSV is generated, not committed)
+submission_Nemanta/
