@@ -1,0 +1,7 @@
+# Our pipeline: the external benchmark and the learned algorithms. Pinned so the submission
+# regenerates byte for byte (RULES.md: "Not approximately -- the same file").
+#   pip install -r requirements-team.txt
+-r requirements-starter.txt
+numpy==2.5.4
+pandas==3.1.0
+scikit-learn==1.9.1

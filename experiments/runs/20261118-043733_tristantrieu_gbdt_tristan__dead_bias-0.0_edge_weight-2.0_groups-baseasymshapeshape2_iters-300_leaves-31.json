@@ -1,0 +1,40 @@
+{
+ "time": "2026-11-18T04:01:04",
+ "author": "tristantrieu2607",
+ "commit": "a0d30fb",
+ "dirty": true,
+ "algo": "gbdt_tristan",
+ "params": {
+  "switch_team": 16.0,
+  "switch_dead": 12.0,
+  "stride": 16,
+  "iters": 300,
+  "lr": 0.08,
+  "leaves": 31,
+  "min_leaf": 400,
+  "use_mirror": true,
+  "groups": "base,asym,shape,shape2",
+  "min_spell_s": 0.0,
+  "dead_bias": 0.0,
+  "train_reading": "main",
+  "short_weight": 2.0,
+  "edge_weight": 2.0
+ },
+ "note": "",
+ "public": {
+  "spell_f1_mean": 0.6069,
+  "macro_f1": 0.9014,
+  "spell_bootstrap_low": null,
+  "spell_bootstrap_high": null,
+  "n_pred_spells": 12,
+  "n_gt_spells": 17,
+  "mean_spell_duration_s": 19.9933,
+  "gt_mean_spell_duration_s": 14.1906,
+  "alive_dead_f1": 0.9687,
+  "team_acc_gt_alive": 0.9154,
+  "n_graded": 7500
+ },
+ "external": null,
+ "bench": "91d16e7e",
+ "runtime_s": 74.8
+}

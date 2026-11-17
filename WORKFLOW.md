@@ -14,11 +14,17 @@ Download these 4 files from the shared Drive (`...Dataset/tactical/`) into `data
 `BAR-ATH_tactical_atd.txt`, `BAR-ATH_tactical_atd.xml`, `BAR-ATH_tactical_homography.csv`, `BAR-ATH_tactical_smart_tagging.xml`.
 `data\` is gitignored — data never goes to GitHub.
 
+Build the external benchmark (once, ~3 GB download; see `validation/README.md`):
+```powershell
+python -m src.external.fetch
+python -m src.external.bench convert
+```
 Check it works (first run parses the tracking once, ~1 min, then it's cached):
 ```powershell
 python -m src.run baseline --no-log
 ```
-Expected: public spellF1 0.3256.
+Expected: external `main` balanced spellF1 ~0.35 at window=50 (higher than the real match: the
+benchmark is easier, compare versions not levels), public check 0.3256.
 
 ## The loop
 1. **Idea** — pick from the backlog in `EXPERIMENTS.md`, or start from a failure you saw.
@@ -27,16 +33,20 @@ Expected: public spellF1 0.3256.
    ```powershell
    python -m src.run <idea> --note "what this tests"
    python -m src.run <idea> -p radius_m=1.0,1.5,2.0          # small sweep
-   python -m src.run <idea> --bootstrap 1000                  # before claiming it beats something
+   python -m src.run <idea> --external-only                   # no BAR-ATH data needed
+   python -m src.run <idea> --profile harsh                   # stress test (not ranked)
    ```
-   Writes `data/submissions/<idea>__<params>.csv` (validated with the organisers' own check), scores it, logs one JSON to `experiments/runs/`.
+   Scores the external benchmark (every DFL / SkillCorner / Metrica match x 2 degradation seeds), writes `data/submissions/<idea>__<params>.csv` (validated with the organisers' own check), prints the public check, logs one JSON to `experiments/runs/`.
 4. **Rank** — `python -m src.leaderboard`
 5. **Decide** — add one line to `EXPERIMENTS.md`: kept or dropped, and what you learned. Update `BUILD_NOTES.md` if the pipeline changed.
 6. **Share** — commit and push (below).
 
+## The no-code loop
+Write an idea in words in `strategies/` (see `strategies/README.md`) and tell Claude "run the new strategies". Claude codes it, scores it with `python -m src.strategy <algo> --quick --title "..."` (10 matches, minutes) and writes the verdict into the idea file and `strategies/BOARD.md`. Winners get a full run (same command without `--quick`).
+
 ## Ranking rules
-- Ranked on **validation spellF1** (our hand labels) once they exist; until then on the public 5 minutes, which is only a sanity check.
-- A gap smaller than the bootstrap interval is not a win.
+- Ranked on **external balanced spellF1** (`main` reading). Never on the public 5 minutes -- that is a pipeline check only, and the 3 Nov rules forbid tuning on it.
+- A gap smaller than seed noise (~0.01) is not a win. It should also hold on the `short` reading and not wreck the worst match.
 - Prefer parameters with a physical meaning over the best-scoring decimal.
 
 ## Git
@@ -50,5 +60,5 @@ git push
 - Rerun a result you want to keep **after** committing, so its log has a clean commit hash (a `*` on the leaderboard means it came from uncommitted code).
 - Never commit `data/`, notebook outputs, or anything frame-level from the tracking.
 
-## Hand labels (validation)
-See `validation/README.md`.
+## Validation
+External matches only -- no hand labels on BAR-ATH (organiser rules of 3 Nov). See `validation/README.md`.

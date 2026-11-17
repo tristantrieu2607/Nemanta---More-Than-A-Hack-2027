@@ -2,8 +2,6 @@
 
 Algorithms never touch files. They receive a Match and return one label per video frame.
 """
-import glob
-import hashlib
 import io
 import os
 import sys
@@ -19,7 +17,7 @@ for _path in (ROOT, os.path.join(ROOT, "evaluation"), os.path.join(ROOT, "starte
 
 import possession_metrics as pm  # noqa: E402  the organisers' scorer, unmodified
 import load_smart_tagging  # noqa: E402
-from games import GAME, GAMES, require, source_frames, half_video_blocks  # noqa: E402
+from games import GAME, GAMES, require, source_frames, half_video_blocks, anchor_video_frame  # noqa: E402
 
 HOME, AWAY = 0, 1
 FPS = 25
@@ -27,8 +25,6 @@ X_CODE = pm.LABELS.index("X")
 CACHE_DIR = os.path.join(ROOT, "data", "cache")            # under data/, so never committed
 SUBMISSION_DIR = os.path.join(ROOT, "data", "submissions")  # likewise
 PUBLIC_GT = os.path.join(ROOT, "evaluation", "gt", "{}_possession_gt_public.csv")
-LABELS_DIR = os.path.join(ROOT, "validation", "labels")
-CALIBRATION_DIR = os.path.join(ROOT, "validation", "calibration")
 FIELDS = 3  # x, y, speed per track and for the ball
 
 
@@ -113,6 +109,17 @@ class Match:
         for _, first, last in self.halves:
             self.graded[first:last + 1] = True
         self._tags = None
+        # Graded stretches the organisers document as dead ball: FAQ.md, "the second half is graded
+        # from frame 110,808 but does not kick off until 113,742. Those 2,934 frames are graded and
+        # all of them are D". Derived from the games.py kickoff anchors; a wait under 1 s is ignored
+        # (the first half is graded from its kickoff).
+        self.dead_spans = []
+        anchors = {1: GAMES[game].get("kickoff"), 2: GAMES[game].get("kickoff_2nd")}
+        for half, first, _ in self.halves:
+            if anchors.get(half):
+                kick = anchor_video_frame(anchors[half]) + 1
+                if kick - first > FPS:
+                    self.dead_spans.append((first, kick))
 
     @property
     def tags(self):
@@ -164,56 +171,3 @@ def _plain(value):
 def score(pred_codes, gt_codes, bootstrap_n=0):
     result = pm.evaluate(gt_codes, pred_codes, bootstrap_n=bootstrap_n)
     return {key: _plain(result[key]) for key in SUMMARY}
-
-
-# -- our hand labels ---------------------------------------------------------------------------
-
-def _seconds(text):
-    total = 0.0
-    for part in str(text).strip().split(":"):
-        total = total * 60 + float(part)
-    return total
-
-
-def read_label_points(path, n_frames):
-    """A hand-label file -> full-length codes, X outside the labelled stretch.
-
-    Each row means "from here on it is <label>". Columns: time,label (seconds, mm:ss.ss or
-    h:mm:ss.ss of the TACTICAL video) or frame,label. The last row must be X, closing the stretch.
-    """
-    table = pd.read_csv(path, dtype=str, comment="#", skip_blank_lines=True)
-    table.columns = [c.strip().lower() for c in table.columns]
-    if "frame" in table.columns:
-        starts = table["frame"].astype(int).to_numpy()
-    elif "time" in table.columns:
-        starts = np.array([int(round(_seconds(t) * FPS)) for t in table["time"]])
-    else:
-        raise ValueError("{}: needs a 'time' or 'frame' column".format(path))
-    labels = table["label"].str.strip().str.upper().to_numpy()
-    bad = sorted(set(labels) - set(pm.LABELS))
-    if bad:
-        raise ValueError("{}: labels outside H/A/D/X: {}".format(path, bad))
-    if labels[-1] != "X":
-        raise ValueError("{}: the last row must be X, closing the labelled stretch".format(path))
-    if np.any(np.diff(starts) <= 0):
-        row = int(np.argmax(np.diff(starts) <= 0)) + 2
-        raise ValueError("{}: times must strictly increase (row {})".format(path, row))
-    codes = np.full(n_frames, X_CODE, dtype=np.int8)
-    for start, end, label in zip(starts[:-1], starts[1:], labels[:-1]):
-        codes[start:end] = pm.LABELS.index(label)
-    return codes
-
-
-def load_validation(n_frames, folder=LABELS_DIR):
-    """All hand-labelled stretches merged into one ground truth. (codes or None, files, hash)."""
-    files = sorted(glob.glob(os.path.join(folder, "*.csv")))
-    if not files:
-        return None, [], None
-    merged = np.full(n_frames, X_CODE, dtype=np.int8)
-    for path in files:
-        codes = read_label_points(path, n_frames)
-        labelled = codes != X_CODE
-        if (labelled & (merged != X_CODE)).any():
-            raise ValueError("{} overlaps another label file".format(os.path.basename(path)))
-        merged[labelled] = codes[labelled]
-    return merged, files, hashlib.md5(merged.tobytes()).hexdigest()[:8]

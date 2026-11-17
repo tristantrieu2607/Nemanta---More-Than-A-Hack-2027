@@ -1,5 +1,15 @@
 # More than a Hack 2027 — Phase 1: Ball Possession
 
+> **Our Phase 1 submission.** Algorithm `src/algos/gbdt_tristan.py`; technical document
+> [TECHNICAL_DOCUMENT.md](TECHNICAL_DOCUMENT.md). To regenerate the submitted file (match data in
+> `data/tactical/`, external data as in [validation/README.md](validation/README.md)):
+> ```
+> pip install -r requirements-team.txt
+> python -m src.external.fetch && python -m src.external.bench convert
+> python -m src.run gbdt_tristan --no-external
+> ```
+
+
 **Organised by [Metrica Sports](https://metrica-sports.com), [FC Barcelona](https://www.fcbarcelona.com)
 and the [Mobile World Capital Barcelona](https://www.mwcbarcelona.com)**, at the Talent Arena in Barcelona.
 

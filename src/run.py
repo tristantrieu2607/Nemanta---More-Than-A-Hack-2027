@@ -1,18 +1,23 @@
-"""Run an algorithm (or a small sweep), write its submission, score it, log the run.
+"""Run an algorithm (or a small sweep): external benchmark, BAR-ATH submission, public check, log.
 
     python -m src.run baseline
     python -m src.run baseline -p window=25,50,125          # sweep: one run per value
     python -m src.run my_idea -p radius_m=1.5 --note "loose ball keeps last team"
-    python -m src.run my_idea --bootstrap 1000              # intervals, before believing any gap
+    python -m src.run my_idea --external-only               # no BAR-ATH needed (no submission)
     python -m src.run my_idea --no-log                      # quick look, nothing recorded
 
-Each logged run is one small JSON in experiments/runs/ -- commit it. Rank everything with
+Decisions are made on the EXTERNAL benchmark (src/external/bench.py: DFL, SkillCorner, Metrica,
+degraded to look like the ATD). The organisers' 3 Nov rules: tune only on external data, no hand
+labels on BAR-ATH. The public 5 minutes are printed as a pipeline check -- never choose on them.
+
+Each logged run is one small JSON in experiments/runs/ -- commit it. Rank with
     python -m src.leaderboard
 """
 import argparse
 import ast
 import datetime
 import getpass
+import hashlib
 import importlib
 import itertools
 import json
@@ -24,8 +29,11 @@ import time
 import numpy as np
 
 from src import common
+from src.external import bench, schema
+from src.external.degrade import PROFILES
 
 RUNS_DIR = os.path.join(common.ROOT, "experiments", "runs")
+BENCH_VERSION = 1  # bump when labels.py / degrade.py change meaning, so old runs show as stale
 
 
 def literal(text):
@@ -57,9 +65,14 @@ def tag(params):
     return re.sub(r"[^A-Za-z0-9._-]", "", text)[:80]
 
 
+def bench_signature(sources, seeds, profile, readings):
+    """Runs are comparable only on the same benchmark: same matches, seeds, profile, readings."""
+    keys = [":".join(k) for k in bench.matches(sources)]
+    text = json.dumps([BENCH_VERSION, keys, list(seeds), profile, list(readings)])
+    return hashlib.md5(text.encode()).hexdigest()[:8]
+
+
 def line(name, scores):
-    if scores is None:
-        return "  {:<13} -- no hand labels yet (validation/labels/)".format(name)
     ci = ""
     if scores["spell_bootstrap_low"] is not None:
         ci = " [{:.3f}-{:.3f}]".format(scores["spell_bootstrap_low"], scores["spell_bootstrap_high"])
@@ -74,7 +87,13 @@ def main():
     parser.add_argument("algo", help="file name in src/algos/, without .py")
     parser.add_argument("-p", "--param", action="append", default=[], metavar="KEY=V1[,V2]")
     parser.add_argument("--note", default="", help="what this run tests, in a few words")
-    parser.add_argument("--bootstrap", type=int, default=0, help="draws for intervals, e.g. 1000")
+    parser.add_argument("--bootstrap", type=int, default=0, help="public-check intervals, e.g. 1000")
+    parser.add_argument("--sources", default=",".join(bench.SOURCES))
+    parser.add_argument("--seeds", default=",".join(map(str, bench.DEFAULT_SEEDS)))
+    parser.add_argument("--profile", default=bench.DEFAULT_PROFILE, choices=sorted(PROFILES))
+    parser.add_argument("--readings", default=",".join(bench.DEFAULT_READINGS))
+    parser.add_argument("--external-only", action="store_true", help="skip BAR-ATH (no data needed)")
+    parser.add_argument("--no-external", action="store_true", help="skip the benchmark (not rankable)")
     parser.add_argument("--no-log", action="store_true", help="do not record in experiments/runs")
     args = parser.parse_args()
 
@@ -84,10 +103,13 @@ def main():
     unknown = sorted(set(grid) - set(defaults))
     if unknown:
         parser.error("{} has no params {} -- declare them in PARAMS".format(args.algo, unknown))
+    sources = tuple(s for s in args.sources.split(",") if s)
+    seeds = tuple(int(s) for s in args.seeds.split(","))
+    readings = tuple(args.readings.split(","))
+    signature = bench_signature(sources, seeds, args.profile, readings)
 
-    match = common.Match()
-    public = common.public_gt(match.game)
-    val, val_files, val_hash = common.load_validation(match.n_frames)
+    match = None if args.external_only else common.Match()
+    public = None if match is None else common.public_gt(match.game)
     author = git("config", "user.name") or getpass.getuser()
     commit = git("rev-parse", "--short", "HEAD")
     dirty = bool(git("status", "--porcelain", "--", "src"))
@@ -95,28 +117,35 @@ def main():
     keys = sorted(grid)
     for values in itertools.product(*(grid[k] for k in keys)):
         params = dict(defaults, **dict(zip(keys, values)))
-        started = time.time()
-        labels = np.asarray(module.predict(match, **params))
-        runtime = time.time() - started
         name = args.algo + ("__" + tag(params) if params else "")
-        path = common.write_submission(os.path.join(common.SUBMISSION_DIR, name + ".csv"), labels)
-        codes = common.check_file(path, match.n_frames)
-
         record = {
             "time": datetime.datetime.now().isoformat(timespec="seconds"),
             "author": author, "commit": commit, "dirty": dirty,
             "algo": args.algo, "params": params, "note": args.note,
-            "runtime_s": round(runtime, 1),
-            "public": common.score(codes, public, args.bootstrap),
-            "val": common.score(codes, val, args.bootstrap) if val is not None else None,
-            "val_hash": val_hash,
-            "val_files": [os.path.basename(f) for f in val_files],
+            "public": None, "external": None, "bench": signature,
         }
-        print("{}  {}  ({:.1f}s){}".format(args.algo, params, runtime,
-                                         "  [uncommitted src/]" if dirty else ""))
-        print(line("public 5 min", record["public"]))
-        print(line("validation", record["val"]))
-        print("  -> " + os.path.relpath(path, common.ROOT))
+        print("{}  {}{}".format(args.algo, params, "  [uncommitted src/]" if dirty else ""))
+        if not args.no_external:
+            started = time.time()
+            record["external"] = bench.evaluate(module, params, sources, seeds, args.profile, readings)
+            record["external_runtime_s"] = round(time.time() - started, 1)
+            print(bench.format_summary(record["external"]))
+        if match is not None:
+            if hasattr(module, "fit"):
+                keys_all = bench.matches(sources)
+                train = bench.LazyMatches({k: schema.load(*k) for k in keys_all}, keys_all, seeds,
+                                          args.profile)
+                params_bar = dict(params, model=module.fit(train, **params))
+            else:
+                params_bar = params
+            started = time.time()
+            labels = np.asarray(module.predict(match, **params_bar))
+            record["runtime_s"] = round(time.time() - started, 1)
+            path = common.write_submission(os.path.join(common.SUBMISSION_DIR, name + ".csv"), labels)
+            codes = common.check_file(path, match.n_frames)
+            record["public"] = common.score(codes, public, args.bootstrap)
+            print(line("public 5 min", record["public"]) + "   <- pipeline check only")
+            print("  -> " + os.path.relpath(path, common.ROOT))
         if not args.no_log:
             os.makedirs(RUNS_DIR, exist_ok=True)
             stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
